@@ -32,15 +32,12 @@ public class PlusImporterIO {
             List<ImportScriptParams> importScriptsParams;
 
             using(var file = FileAccess.Open(path, FileAccess.ModeFlags.Read)) {
-                // importScriptsParams = JsonSerializer.Deserialize<List<ImportScriptParams>>(file.GetAsText());
-
                 bool finishedSection = false;
 
                 string line = file.GetLine();
                 bool reachedEnd = file.GetPosition() == file.GetLength();
 
                 while(!reachedEnd) {
-                    GD.Print(file.GetPosition(), " : ", file.GetLength());
                     if(line == "[Scripts]") {
                         while (!reachedEnd) {
                             line = file.GetLine();
@@ -85,8 +82,6 @@ public class PlusImporterIO {
 
                             var scriptType = extendedClasses.SingleOrDefault(c => c.Name.Equals(scriptName));
 
-                            GD.Print("Scripts: ", string.Join(", ", extendedClasses.Select(c => c.Name)));
-
                             if(scriptType == null) {
                                 GD.PrintErr($"Failed to find script for \"{scriptName}\", skipping");
                                 continue;
@@ -125,8 +120,6 @@ public class PlusImporterIO {
     {
         // Godot actually stores this in its own way for some reason, see editor_file_system.cpp::_reimport_group().
         using(var file = FileAccess.Open(path, FileAccess.ModeFlags.Write)) {
-            // file.StoreString(JsonSerializer.Serialize(defaultImportScriptsParams));
-
             file.StoreLine("[Scripts]");
 
             foreach(var script in importScriptsPlus.Scripts) {

@@ -10,8 +10,6 @@ public partial class EditorScenePostImportApplier : EditorScenePostImport
 
     public override GodotObject _PostImport(Node scene)
     {
-        GD.Print("And this");
-        
         var importPlusPath = $"{GetSourceFile()}.import.plus";
         var plusImporterIo = new PlusImporterIO();
 
@@ -50,14 +48,6 @@ public partial class EditorScenePostImportApplier : EditorScenePostImport
             }
 
             return resultObject;
-
-            // foreach(var importScriptParams in importScriptsParams.ImportScriptsParams) {
-            //     GD.Print("Import script: ", importScriptParams);
-            //     foreach(var importScriptParam in importScriptParams.ImportProperties) {
-            //         GD.Print(importScriptParam.Name, importScriptParam.Value);
-            //         AddImportOption($"{importScriptParams.Name}:{importScriptParam.Name}", importScriptParam.Value);
-            //     }
-            // }
         } catch (SceneImportPlusException e) {
             GD.PrintErr(e.Message);
             GD.PrintErr($"Failed to import: {importPlusPath}");

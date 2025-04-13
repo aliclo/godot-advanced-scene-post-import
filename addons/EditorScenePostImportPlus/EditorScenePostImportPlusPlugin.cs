@@ -10,7 +10,6 @@ public partial class EditorScenePostImportPlusPlugin : EditorPlugin
 
 	public override void _EnterTree()
 	{
-		GD.Print("Enter tree");
 		if(_editorScenePostImportPluginPlus == null) {
             _editorScenePostImportPluginPlus = new EditorScenePostImportPluginPlus();
         }
@@ -20,7 +19,6 @@ public partial class EditorScenePostImportPlusPlugin : EditorPlugin
 
 	public override void _ExitTree()
 	{
-		GD.Print("Exit tree");
 		RemoveScenePostImportPlugin(_editorScenePostImportPluginPlus);
 	}
 }

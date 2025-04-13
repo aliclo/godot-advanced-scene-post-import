@@ -8,11 +8,6 @@ public partial class MyImporter : EditorScenePostImportPlus
     [Export]
     public bool Test { get; set; }
 
-    // public override List<CustomImportProperty> GetImportProps()
-    // {
-    //     return new List<CustomImportProperty>() {new CustomImportProperty() {Name = "test", Value = false}};
-    // }
-
     public override GodotObject _PostImport(GodotObject godotObject)
     {
         GD.Print("Test: ", Test);

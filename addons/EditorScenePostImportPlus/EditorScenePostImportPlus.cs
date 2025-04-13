@@ -7,6 +7,4 @@ public abstract partial class EditorScenePostImportPlus : GDScript
 
     public abstract GodotObject _PostImport(GodotObject godotObject);
 
-    // public abstract List<CustomImportProperty> GetImportProps();
-
 }
