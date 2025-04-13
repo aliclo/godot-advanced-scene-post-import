@@ -15,7 +15,7 @@ public partial class EditorScenePostImportPluginPlus : EditorScenePostImportPlug
     {
         _importPlusPath = $"{path}.import.plus";
         
-        AddImportOption("Scripts", new Array<EditorScenePostImportPlus>());
+        AddImportOption("Scripts", new Array<CSharpScript>());
 
         var plusImporterIo = new PlusImporterIO();
 
