@@ -1,1 +1,8 @@
-MyImporter/Test=false
+[Scripts]
+res://addons/EditorScenePostImportPlus/MyImporter.cs
+res://addons/EditorScenePostImportPlus/MySecondImporter.cs
+
+[Properties]
+MyImporter/Test=true
+MySecondImporter/SomeNumber=11.22
+

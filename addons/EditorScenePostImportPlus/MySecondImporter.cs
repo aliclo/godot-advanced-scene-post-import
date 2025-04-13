@@ -1,12 +1,11 @@
 using Godot;
 using System;
-using System.Collections.Generic;
 
-public partial class MyImporter : EditorScenePostImportPlus
+public partial class MySecondImporter : EditorScenePostImportPlus
 {
 
     [Export]
-    public bool Test { get; set; }
+    public double SomeNumber { get; set; }
 
     // public override List<CustomImportProperty> GetImportProps()
     // {
@@ -15,7 +14,7 @@ public partial class MyImporter : EditorScenePostImportPlus
 
     public override GodotObject _PostImport(GodotObject godotObject)
     {
-        GD.Print("Test: ", Test);
+        GD.Print("SomeNumber: ", SomeNumber);
         return godotObject;
     }
 

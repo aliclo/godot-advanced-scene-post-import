@@ -9,16 +9,6 @@ using System.Text.Json;
 public partial class EditorScenePostImportPluginPlus : EditorScenePostImportPlugin
 {
 
-    private record CustomImportProperty {
-        public string Name { get; set; }
-        public Variant Value { get; set; }
-    }
-
-    private record ImportScriptParams {
-        public string Name { get; set; }
-        public List<CustomImportProperty> ImportProperties { get; set; }
-    }
-
     // private static System.Collections.Generic.Dictionary<string, List<EditorScenePostImportPlus>> _importScripts = new System.Collections.Generic.Dictionary<string, List<EditorScenePostImportPlus>>();
     // private static System.Collections.Generic.Dictionary<EditorScenePostImportPlus, List<CustomImportProperty>> _props = new System.Collections.Generic.Dictionary<EditorScenePostImportPlus, List<CustomImportProperty>>();
     // private static string _path;
@@ -32,77 +22,25 @@ public partial class EditorScenePostImportPluginPlus : EditorScenePostImportPlug
         GD.Print("Getting import options ", path);
         AddImportOption("Scripts", new Array<EditorScenePostImportPlus>());
 
-        List<ImportScriptParams> importScriptsParams;
+        var plusImporterIo = new PlusImporterIO();
 
-        // Godot actually stores this in its own way for some reason, see editor_file_system.cpp::_reimport_group().
-        // To avoid adding unknown complexity, we'll use JSON
-        if(FileAccess.FileExists(_importPlusPath)) {
-            System.Collections.Generic.Dictionary<string, ImportScriptParams> importScriptsParamsDict = new();
+        try {
+            var importScriptsPlus = plusImporterIo.Load(_importPlusPath);
 
-            var extendedClasses = AppDomain.CurrentDomain.GetAssemblies()
-                .SelectMany(a => a.GetTypes())
-                .Where(t => t.IsClass && !t.IsAbstract && t.IsSubclassOf(typeof(EditorScenePostImportPlus)));
-
-            var classNames = extendedClasses.Select(c => c.Name);
-
-            var duplicateClassNames = classNames.Where(n => classNames.Where(on => n == on).Count() > 1);
-
-            if(duplicateClassNames.Any()) {
-                GD.PrintErr($"Failed to import. Duplicate class names extending \"{nameof(EditorScenePostImportPlus)}\": ", duplicateClassNames);
+            if(importScriptsPlus == null) {
                 return;
             }
 
-            using(var file = FileAccess.Open(_importPlusPath, FileAccess.ModeFlags.Read)) {
-                // importScriptsParams = JsonSerializer.Deserialize<List<ImportScriptParams>>(file.GetAsText());
-                while(file.GetPosition() < file.GetLength()) {
-                    var parameterAssignmentLine = file.GetLine();
-                    var parameterAssignment = parameterAssignmentLine.Split("=");
-                    
-                    var pathParameter = parameterAssignment[0];
-                    var parameterValue = parameterAssignment[1];
-                    
-                    var parameterPathComponents = pathParameter.Split("/");
-                    var scriptName = parameterPathComponents[0];
-                    var parameterName = parameterPathComponents[1];
-
-                    bool exists = importScriptsParamsDict.TryGetValue(scriptName, out ImportScriptParams importScriptParams);
-                    
-                    if(exists == false) {
-                        importScriptParams = new ImportScriptParams() {
-                            Name = scriptName,
-                            ImportProperties = new List<CustomImportProperty>()
-                        };
-
-                        importScriptsParamsDict[scriptName] = importScriptParams;
-                    }
-
-                    var scriptType = extendedClasses.SingleOrDefault(c => c.Name.Equals(scriptName));
-
-                    GD.Print("Scripts: ", string.Join(", ", extendedClasses.Select(c => c.Name)));
-
-                    if(scriptType == null) {
-                        GD.PrintErr($"Failed to find script for \"{scriptName}\", skipping");
-                        continue;
-                    }
-
-                    var referencedProperty = scriptType.GetProperties()
-                        .SingleOrDefault(p => Attribute.IsDefined(p, typeof(ExportAttribute)) && p.Name == parameterName);
-
-                    if(referencedProperty == null) {
-                        GD.PrintErr($"Failed to import \"{parameterName}\" for script \"{scriptName}\", it doesn't exist anymore, skipping");
-                        continue;
-                    }
-
-                    importScriptParams.ImportProperties.Add(new CustomImportProperty() {
-                        Name = parameterName,
-                        Value = (Variant)typeof(Variant).GetMethod("From").MakeGenericMethod(referencedProperty.PropertyType).Invoke(null, new[] { Convert.ChangeType(parameterValue, referencedProperty.PropertyType) })
-                    });
+            foreach(var importScriptParams in importScriptsPlus.ImportScriptsParams) {
+                GD.Print("Import script: ", importScriptParams);
+                foreach(var importScriptParam in importScriptParams.ImportProperties) {
+                    GD.Print(importScriptParam.Name, importScriptParam.Value);
+                    AddImportOption($"{importScriptParams.Name}:{importScriptParam.Name}", importScriptParam.Value);
                 }
             }
-
-            importScriptsParams = importScriptsParamsDict.Values.ToList();
-        } else {
-            importScriptsParams = new List<ImportScriptParams>();
+        } catch (SceneImportPlusException e) {
+            GD.PrintErr(e.Message);
+            GD.PrintErr($"Failed to import: {_importPlusPath}");
         }
 
         // var exists = _importScripts.TryGetValue(path, out List<EditorScenePostImportPlus> importScripts);
@@ -117,14 +55,6 @@ public partial class EditorScenePostImportPluginPlus : EditorScenePostImportPlug
         //         }
         //     }
         // }
-
-        foreach(var importScriptParams in importScriptsParams) {
-            GD.Print("Import script: ", importScriptParams);
-            foreach(var importScriptParam in importScriptParams.ImportProperties) {
-                GD.Print(importScriptParam.Name, importScriptParam.Value);
-                AddImportOption($"{importScriptParams.Name}:{importScriptParam.Name}", importScriptParam.Value);
-            }
-        }
     }
 
     // public override void _PostProcess(Node scene)
@@ -178,17 +108,13 @@ public partial class EditorScenePostImportPluginPlus : EditorScenePostImportPlug
         //     var importScriptParams = importScriptsParams.SingleOrDefault()
         // }
 
-        // Godot actually stores this in its own way for some reason, see editor_file_system.cpp::_reimport_group().
-        // To avoid adding unknown complexity, we'll use JSON
-        using(var file = FileAccess.Open(_importPlusPath, FileAccess.ModeFlags.Write)) {
-            // file.StoreString(JsonSerializer.Serialize(defaultImportScriptsParams));
+        var importScriptsPlus = new ImportScriptsPlus() {
+            Scripts = scripts.Select(s => s.ResourcePath).ToList(),
+            ImportScriptsParams = defaultImportScriptsParams.ToList()
+        };
 
-            foreach(var defaultImportScriptParams in defaultImportScriptsParams) {
-                foreach(var defaultImportScriptParam in defaultImportScriptParams.ImportProperties) {
-                    file.StoreString($"{defaultImportScriptParams.Name}/{defaultImportScriptParam.Name}={defaultImportScriptParam.Value}");
-                }
-            }
-        }
+        var plusImporterIo = new PlusImporterIO();
+        plusImporterIo.Save(_importPlusPath, importScriptsPlus);
 
         // foreach(var importScript in importScripts) {
         //     GD.Print("Import script: ", importScript);
