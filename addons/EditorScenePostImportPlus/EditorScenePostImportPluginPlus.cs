@@ -35,7 +35,7 @@ public partial class EditorScenePostImportPluginPlus : EditorScenePostImportPlug
                 GD.Print("Import script: ", importScriptParams);
                 foreach(var importScriptParam in importScriptParams.ImportProperties) {
                     GD.Print(importScriptParam.Name, importScriptParam.Value);
-                    AddImportOption($"{importScriptParams.Name}:{importScriptParam.Name}", importScriptParam.Value);
+                    AddImportOption($"{importScriptParams.Name}/{importScriptParam.Name}", importScriptParam.Value);
                 }
             }
         } catch (SceneImportPlusException e) {
@@ -77,7 +77,7 @@ public partial class EditorScenePostImportPluginPlus : EditorScenePostImportPlug
         var defaultImportScriptsParams = importScripts.Select(s => new ImportScriptParams() {
             Name = s.GetType().Name,
             ImportProperties = s.GetType().GetProperties().Where(p => Attribute.IsDefined(p, typeof(ExportAttribute))).Select(ip => {
-                var optionKey = $"{s.GetType().Name}:{ip.Name}";
+                var optionKey = $"{s.GetType().Name}/{ip.Name}";
                 Variant value = GetOptionValue(optionKey);
 
                 if(value.Obj == null) {
